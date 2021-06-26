@@ -1,16 +1,11 @@
 # Directed-Graph-Search-Acyclic
 
-Compile program: g++ main.cpp -o main <br/>
-Run Program: ./main 0<br/>
+Compile program: g++ main_seq.cpp -o main_seq <br/>
+Run Program: ./main_seq 0<br/>
+<br/>
+Compile program: g++ main_par.cpp -o main_par <br/>
+Run Program: ./main_par 0 3 30<br/>
 <br/>
 Where 0 is the starting vertex.<br/>
-<br/>
-Graph gs(9);<br/>
-gs.addEdge(0, 1);<br/>
-gs.addEdge(0, 6);<br/>
-gs.addEdge(2, 4);<br/>
-gs.addEdge(4, 3);<br/>
-gs.addEdge(3, 5);<br/>
-gs.addEdge(6, 7);<br/>
-gs.addEdge(1, 2);<br/>
-gs.addEdge(1, 8);<br/>
+Where 3 is the number of workers.<br/>
+Where 30 is the value to find at nodes and get count.<br/>
