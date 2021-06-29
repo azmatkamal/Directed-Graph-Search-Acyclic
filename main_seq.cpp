@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "utimer.cpp"
+#include "data.cpp"
 
 using namespace std;
 
@@ -52,7 +53,7 @@ public:
     void addEdge(int v, int w);
 
     // prints BFS traversal from a given source s
-    void BFS(int s);
+    int BFS(int s, int value_to_find);
 };
 
 Graph::Graph(int V)
@@ -64,30 +65,15 @@ Graph::Graph(int V)
 void Graph::addEdge(int v, int w)
 {
     adj[v].push_back(w); // Add w to v’s list.
+    adj[w].push_back(v); // Add v to w’s list.
     all_elements.push_back(v);
     all_elements.push_back(w);
 }
 
-void Graph::BFS(int s)
+int Graph::BFS(int s, int value_to_find)
 {
-    std::chrono::milliseconds ms = 40ms;
-    int values[][2] = {
-        {0, 20},
-        {1, 20},
-        {2, 30},
-        {3, 10},
-        {4, 50},
-        {5, 30},
-        {6, 30},
-        {7, 60},
-        {8, 25},
-        {9, 10},
-        {10, 30},
-        {11, 30},
-        {12, 50},
-        {13, 30},
-        {14, 25}
-    };
+    // std::chrono::milliseconds ms = 10ms;
+    int found_value_count = 0;
     // Mark all the vertices as not visited
     bool *visited = new bool[V];
     for(int i = 0; i < V; i++)
@@ -120,56 +106,58 @@ void Graph::BFS(int s)
             {
                 visited[*i] = true;
                 queue.push_back(*i);
-                delay(ms);
+                if(values[*i] == value_to_find)
+                {
+                    found_value_count++;
+                }
+                // for_each(std::begin(values), std::end(values), [&value_to_find, &found_value_count, i](int(&row)[2])
+                // {
+                //     if (row[0] == *i && row[1] == value_to_find)
+                //     {
+                //         found_value_count++;
+                //     }
+                // });
+                // delay(ms);
             }
         }
     }
+    return found_value_count;
 }
 
 // Driver program to test methods of graph class
 int main(int argc, char *argv[])
 {
-    auto start = std::chrono::high_resolution_clock::now();
-    // Create a graph given in the above diagram
-    Graph gs(22);
-    gs.addEdge(0, 1);
-    gs.addEdge(0, 6);
-    gs.addEdge(0, 9);
-    gs.addEdge(0, 11);
-    gs.addEdge(0, 13);
-    gs.addEdge(0, 14);
-    gs.addEdge(1, 2);
-    gs.addEdge(1, 8);
-    gs.addEdge(2, 4);
-    gs.addEdge(3, 5);
-    gs.addEdge(4, 3);
-    gs.addEdge(5, 7);
-    gs.addEdge(8, 3);
-    gs.addEdge(8, 4);
-    gs.addEdge(9, 10);
-    gs.addEdge(9, 11);
-    gs.addEdge(9, 12);
-    gs.addEdge(11, 12);
-    gs.addEdge(11, 14);
-    gs.addEdge(12, 13);
-    gs.addEdge(13, 14);
 
-    int starting_vertex = atoi(argv[1]);
-    bool found = (std::find(gs.all_elements.begin(), gs.all_elements.end(), starting_vertex) != gs.all_elements.end());
-
-    if (!found)
     {
-        std::cout << "Starting vertex " << starting_vertex << " is not one of the graph edge\n";
-        return 0;
+        utimer ut("SEQ TIME");
+        // auto start = std::chrono::high_resolution_clock::now();
+        // Create a graph given in the above diagram
+        Graph gs(1047);
+        for (auto n : nodes)
+        {
+            gs.addEdge(n[0], n[1]);
+        }
+
+        int starting_vertex = atoi(argv[1]);
+        bool found = (std::find(gs.all_elements.begin(), gs.all_elements.end(), starting_vertex) != gs.all_elements.end());
+
+        if (!found)
+        {
+            std::cout << "Starting vertex " << starting_vertex << " is not one of the graph edge\n";
+            return 0;
+        }
+        int value_to_find = atoi(argv[2]);
+        cout << "Value to find: " << value_to_find << endl;
+
+        cout << "Following is Breadth First Traversal "
+             << "(starting from vertex " + to_string(starting_vertex) + ") \n";
+
+        int found_value_count = gs.BFS(starting_vertex, value_to_find);
+        cout << endl << "Found '" << value_to_find << "' " << found_value_count << " times." << endl;
+
+        // auto elapsed = std::chrono::high_resolution_clock::now() - start;
+        // auto usec = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+        // cout << endl << "Spent " << usec << " usecs" << endl;
     }
-
-    cout << "Following is Breadth First Traversal "
-         << "(starting from vertex " + to_string(starting_vertex) + ") \n";
-    gs.BFS(starting_vertex);
-
-    auto elapsed = std::chrono::high_resolution_clock::now() - start;
-    auto usec = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-    // and print time
-    cout << endl << "Spent " << usec << " usecs" << endl;
     return 0;
 }
