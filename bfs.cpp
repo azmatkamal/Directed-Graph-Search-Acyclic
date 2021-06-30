@@ -4,7 +4,10 @@
 #include <list>
 #include <algorithm>
 #include <string>
+#include <queue>
 #include <chrono>
+#include <mutex>
+#include <vector>
 #include <thread>
 #include <ctime>   // For time()
 #include <cstdlib> // For srand() and rand()
@@ -12,43 +15,76 @@
 
 using namespace std;
 
+mutex QLock;
+mutex PLock;
+mutex SQueue;
+
 namespace bfs
 {
-    void BFS(int s, int value_to_find, int found_value_count, bool visited[], list<int> *adj, list<int> queue, list<int> queue2, int nw)
+    void BFS(int &value_to_find, int &found_value_count, vector<bool> &visited, list<int> *adj, vector<queue<int>>& queue1, vector<queue<int>>& queue2, int nw, int j)
     {
-        // Mark the current node as visited and enqueue it
-        visited[s] = true;
-        queue.push_back(s);
+        // queue<int> q1 = queue1[j];
+        // queue<int> queue2[j] = queue2[j];
+        bool completed = false;
+        int a = 0;
 
-        // 'i' will be used to get all adjacent
-        // vertices of a vertex
-        list<int>::iterator i;
-
-        while (!queue.empty())
-        {
-            // Dequeue a vertex from queue and print it
-            s = queue.front();
-            cout << s << " ";
-            queue.pop_front();
-
-            // Get all adjacent vertices of the dequeued
-            // vertex s. If a adjacent has not been visited,
-            // then mark it visited and enqueue it
-            for (i = adj[s].begin(); i != adj[s].end(); ++i)
+        // while(!completed) {
+            while (!queue1[j].empty())
             {
-                if (!visited[*i])
+                QLock.lock();
+                // Dequeue a vertex from queue and print it
+                a = queue1[j].front();
+                // cout << a << " ";
+                queue1[j].pop();
+                QLock.unlock();
+
+                if (values[a] == value_to_find)
                 {
-                    visited[*i] = true;
-                    queue.push_back(*i);
-                    if (values[*i] == value_to_find)
+                    found_value_count++;
+                }
+                list<int>::iterator i;
+                // cout << endl << a << " ====== ";
+                // Get all adjacent vertices of the dequeued
+                // vertex s. If a adjacent has not been visited,
+                // then mark it visited and enqueue it
+                for (i= adj[a].begin(); i != adj[a].end(); ++i)
+                {
+                    // cout << *i << " ";
+                    if (!visited[*i])
                     {
-                        found_value_count++;
+                        PLock.lock();
+                        visited[*i] = true;
+                        PLock.unlock();
+                        queue2[j].push(*i);
+                        // delay(ms);
                     }
-                    // delay(ms);
+                }
+                completed = true;
+                SQueue.lock();
+                for (int i = 0; i < nw; ++i)
+                {
+                    completed &= !queue1[i].empty();
+                    // cout << endl << "Completed " << completed;
+                    if(!completed) {
+                        // for(int n=0; n<3; n++) {
+                            queue1[j].push(queue1[i].front());
+                            queue1[i].pop();
+                        // }
+                        break;
+                    }
+                }
+                SQueue.unlock();
+
+                if(completed) {
+                    queue<int> qq = queue1[j];
+                    queue1[j] = queue2[j];
+                    queue2[j] = qq;
+                    cout << endl << "Q size " << a << " " << queue1[j].size() << " " << queue2[j].size();
+                    if(!queue1[j].empty()) completed = false;
                 }
             }
-        }
-        cout << endl
-            << "Found '" << value_to_find << "' " << found_value_count << " times." << endl;
+        // }
+        // cout << endl
+        //     << "Found '" << value_to_find << "' " << found_value_count << " times." << endl;
     }
 }

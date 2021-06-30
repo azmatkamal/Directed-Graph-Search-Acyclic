@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <queue>
 #include <chrono>
 #include <thread>
 #include <ctime>   // For time()
@@ -77,49 +78,59 @@ void Graph::Execute(Graph gs, int s, int value_to_find, int nw)
 {
     int found_value_count = 0;
     // Mark all the vertices as not visited
-    bool *visited = new bool[V];
+    vector<bool> visited(V);
     for (int i = 0; i < V; i++)
         visited[i] = false;
 
     // Create a queue for BFS
-    list<int> queue;
-    list<int> queue2;
+    vector<queue<int>> queue1(nw);
+    vector<queue<int>> queue2(nw);
 
     // Mark the current node as visited and enqueue it
     visited[s] = true;
-    queue.push_back(s);
+    // queue.push_back(s);
 
-    // 'i' will be used to get all adjacent
-    // vertices of a vertex
-    list<int>::iterator i; 
-    
     // Dequeue a vertex from queue and print it
-    s = queue.front();
-    cout << s << " ";
-    queue.pop_front();
+    // s = queue.front();
+    // cout << s << " ";
+    // queue.pop_front();
 
     if (values[s] == value_to_find)
     {
         found_value_count++;
     }
-
+    // queue1[0].push(s);
+    list<int>::iterator i;
     // Get all adjacent vertices of the dequeued
     // vertex s. If a adjacent has not been visited,
     // then mark it visited and enqueue it
+    int x = 0;
     for (i = adj[s].begin(); i != adj[s].end(); ++i)
     {
+        cout << *i << " " << endl;
         if (!visited[*i])
         {
             visited[*i] = true;
-            queue.push_back(*i);
+            queue1[nw>1? x%nw : 0].push(*i);
+            x++;
         }
     }
     std::vector<std::thread *> tids(nw);
-    for (int i = 0; i < nw; i++)
-        tids[i] = new std::thread(bfs::BFS, s, value_to_find, found_value_count, visited, std::ref(adj), std::ref(queue), std::ref(queue2), nw);
+    for (int j = 0; j < nw; j++)
+        tids[j] = new std::thread(
+            bfs::BFS, 
+            std::ref(value_to_find), 
+            std::ref(found_value_count), 
+            std::ref(visited), 
+            std::ref(adj), 
+            std::ref(queue1), 
+            std::ref(queue2), 
+            nw, 
+            j
+        );
 
-    for (int i = 0; i < nw; i++)
-        tids[i]->join();
+    for (int j = 0; j < nw; j++)
+        tids[j]->join();
 }
 
 // Driver program to test methods of graph class
@@ -130,7 +141,8 @@ int main(int argc, char *argv[])
         // auto start = std::chrono::high_resolution_clock::now();
         // Create a graph given in the above diagram
         // cout << (&nodes).size() << endl;
-        Graph gs(3951);
+        Graph gs(22);
+        // Graph gs(3951);
         for(auto n : nodes)
         {
             gs.addEdge(n[0], n[1]);

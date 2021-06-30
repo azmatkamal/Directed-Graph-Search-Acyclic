@@ -59,6 +59,7 @@
         "xtr1common": "cpp",
         "condition_variable": "cpp",
         "deque": "cpp",
-        "optional": "cpp"
+        "optional": "cpp",
+        "queue": "cpp"
     }
 }

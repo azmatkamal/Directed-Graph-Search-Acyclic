@@ -132,7 +132,8 @@ int main(int argc, char *argv[])
         utimer ut("SEQ TIME");
         // auto start = std::chrono::high_resolution_clock::now();
         // Create a graph given in the above diagram
-        Graph gs(1047);
+        Graph gs(22);
+        // Graph gs(1047);
         for (auto n : nodes)
         {
             gs.addEdge(n[0], n[1]);
