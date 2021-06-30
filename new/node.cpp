@@ -1,3 +1,6 @@
+#ifndef NODE_CPP
+#define NODE_CPP
+
 #include <climits>
 #include <iostream>
 #include <queue>
@@ -46,3 +49,5 @@ class Node
             return this->edges;
         }
 };
+
+#endif

@@ -1,3 +1,5 @@
+#ifndef EDGE_CPP
+#define EDGE_CPP
 class Edge
 {
     private:
@@ -19,3 +21,5 @@ Edge::Edge(const int& id) {
 int Edge::get_edge_id() {
     return this->id;
 }
+
+#endif
