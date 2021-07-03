@@ -71,14 +71,10 @@ void BFS(int starting_node, int value_to_find)
     q.push(g.getNode(starting_node));
     visited[starting_node] = true;
 
-    cout << "Following is Breadth First Traversal "
-         << "(starting from vertex " + to_string(starting_node) + ") \n";
-
     while (!q.empty())
     {
         delay(ms);
         current = q.front();
-        cout << current.get_node_id() << " ";
         q.pop();
 
         if (current.get_value() == value_to_find)

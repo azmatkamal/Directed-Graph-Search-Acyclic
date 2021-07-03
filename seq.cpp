@@ -72,7 +72,7 @@ void Graph::addEdge(int v, int w)
 
 int Graph::BFS(int s, int value_to_find)
 {
-    // std::chrono::milliseconds ms = 10ms;
+    std::chrono::milliseconds ms = 10ms;
     int found_value_count = 0;
     // Mark all the vertices as not visited
     bool *visited = new bool[V];
@@ -92,9 +92,9 @@ int Graph::BFS(int s, int value_to_find)
  
     while(!queue.empty())
     {
+        delay(ms);
         // Dequeue a vertex from queue and print it
         s = queue.front();
-        cout << s << " ";
         queue.pop_front();
  
         // Get all adjacent vertices of the dequeued
@@ -106,18 +106,10 @@ int Graph::BFS(int s, int value_to_find)
             {
                 visited[*i] = true;
                 queue.push_back(*i);
-                if(values[*i] == value_to_find)
+                if(values2[*i] == value_to_find)
                 {
                     found_value_count++;
                 }
-                // for_each(std::begin(values), std::end(values), [&value_to_find, &found_value_count, i](int(&row)[2])
-                // {
-                //     if (row[0] == *i && row[1] == value_to_find)
-                //     {
-                //         found_value_count++;
-                //     }
-                // });
-                // delay(ms);
             }
         }
     }
@@ -132,9 +124,11 @@ int main(int argc, char *argv[])
         utimer ut("SEQ TIME");
         // auto start = std::chrono::high_resolution_clock::now();
         // Create a graph given in the above diagram
-        Graph gs(22);
+
+        int rows = sizeof nodes / sizeof nodes[0];
+        Graph gs((rows+1));
         // Graph gs(1047);
-        for (auto n : nodes)
+        for (auto n : edges)
         {
             gs.addEdge(n[0], n[1]);
         }
@@ -149,9 +143,6 @@ int main(int argc, char *argv[])
         }
         int value_to_find = atoi(argv[2]);
         cout << "Value to find: " << value_to_find << endl;
-
-        cout << "Following is Breadth First Traversal "
-             << "(starting from vertex " + to_string(starting_vertex) + ") \n";
 
         int found_value_count = gs.BFS(starting_vertex, value_to_find);
         cout << endl << "Found '" << value_to_find << "' " << found_value_count << " times." << endl;

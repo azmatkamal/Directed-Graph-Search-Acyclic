@@ -14,30 +14,6 @@
 
 using namespace std;
 
-void delay(std::chrono::milliseconds m)
-{
-#ifdef ACTIVEWAIT
-    auto active_wait = [](std::chrono::milliseconds ms)
-    {
-        long msecs = ms.count();
-        auto start = std::chrono::high_resolution_clock::now();
-        auto end = false;
-        while (!end)
-        {
-            auto elapsed = std::chrono::high_resolution_clock::now() - start;
-            auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-            if (msec > msecs)
-                end = true;
-        }
-        return;
-    };
-    active_wait(m);
-#else
-    std::this_thread::sleep_for(m);
-#endif
-    return;
-}
-
 class Graph
 {
     int V; // No. of vertices
@@ -88,16 +64,9 @@ void Graph::Execute(Graph gs, int s, int value_to_find, int nw)
 
     // Mark the current node as visited and enqueue it
     visited[s] = true;
-    // queue.push_back(s);
-
-    // Dequeue a vertex from queue and print it
-    // s = queue.front();
-    // cout << s << " ";
-    // queue.pop_front();
-
-    if (values[s] == value_to_find)
+    if (values2[s] == value_to_find)
     {
-        found_value_count++;
+        // found_value_count++;
     }
     // queue1[0].push(s);
     list<int>::iterator i;
@@ -107,7 +76,6 @@ void Graph::Execute(Graph gs, int s, int value_to_find, int nw)
     int x = 0;
     for (i = adj[s].begin(); i != adj[s].end(); ++i)
     {
-        cout << *i << " " << endl;
         if (!visited[*i])
         {
             visited[*i] = true;
@@ -131,6 +99,9 @@ void Graph::Execute(Graph gs, int s, int value_to_find, int nw)
 
     for (int j = 0; j < nw; j++)
         tids[j]->join();
+
+    cout << endl
+         << "Found '" << value_to_find << "' " << found_value_count << " times." << endl;
 }
 
 // Driver program to test methods of graph class
@@ -138,12 +109,10 @@ int main(int argc, char *argv[])
 {
     {
         utimer ut("PAR TIME");
-        // auto start = std::chrono::high_resolution_clock::now();
-        // Create a graph given in the above diagram
-        // cout << (&nodes).size() << endl;
-        Graph gs(22);
+        int rows = sizeof nodes / sizeof nodes[0];
+        Graph gs((rows + 1));
         // Graph gs(3951);
-        for(auto n : nodes)
+        for (auto n : edges)
         {
             gs.addEdge(n[0], n[1]);
         }
@@ -156,10 +125,10 @@ int main(int argc, char *argv[])
         {
             starting_vertex = atoi(argv[1]);
             cout << "Starting from: " << starting_vertex << endl;
-            nw = atoi(argv[2]);
-            cout << "No. of workers: " << nw << endl;
-            value_to_find = atoi(argv[3]);
+            value_to_find = atoi(argv[2]);
             cout << "Value to find: " << value_to_find << endl;
+            nw = atoi(argv[3]);
+            cout << "No. of workers: " << nw << endl;
         }
         else
         {
@@ -175,15 +144,7 @@ int main(int argc, char *argv[])
             return 0;
         }
 
-        cout << "Following is Breadth First Traversal "
-             << "(starting from vertex " + to_string(starting_vertex) + ") \n";
-
         gs.Execute(gs, starting_vertex, value_to_find, nw);
-        // gs.BFS(starting_vertex, value_to_find);
-        
-        // auto elapsed = std::chrono::high_resolution_clock::now() - start;
-        // auto usec = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-        // cout << endl << "Spent " << usec << " usecs" << endl;
     }
     return 0;
 }

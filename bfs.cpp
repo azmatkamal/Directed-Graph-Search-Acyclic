@@ -21,70 +21,85 @@ mutex SQueue;
 
 namespace bfs
 {
+
+    void delay(std::chrono::milliseconds m)
+    {
+        #ifdef ACTIVEWAIT
+                auto active_wait = [](std::chrono::milliseconds ms)
+                {
+                    long msecs = ms.count();
+                    auto start = std::chrono::high_resolution_clock::now();
+                    auto end = false;
+                    while (!end)
+                    {
+                        auto elapsed = std::chrono::high_resolution_clock::now() - start;
+                        auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
+                        if (msec > msecs)
+                            end = true;
+                    }
+                    return;
+                };
+                active_wait(m);
+        #else
+                std::this_thread::sleep_for(m);
+        #endif
+        return;
+    }
+
     void BFS(int &value_to_find, int &found_value_count, vector<bool> &visited, list<int> *adj, vector<queue<int>>& queue1, vector<queue<int>>& queue2, int nw, int j)
     {
-        // queue<int> q1 = queue1[j];
-        // queue<int> queue2[j] = queue2[j];
+        queue<int> q1 = queue1[j];
+        queue<int> q2 = queue2[j];
         bool completed = false;
         int a = 0;
+        std::chrono::milliseconds ms = 10ms;
 
-        // while(!completed) {
-            while (!queue1[j].empty())
+        while(!completed) {
+            while (!q1.empty())
             {
+                delay(ms);
                 QLock.lock();
-                // Dequeue a vertex from queue and print it
-                a = queue1[j].front();
-                // cout << a << " ";
-                queue1[j].pop();
+                a = q1.front();
+                q1.pop();
                 QLock.unlock();
 
-                if (values[a] == value_to_find)
+                if (values2[a] == value_to_find)
                 {
                     found_value_count++;
                 }
                 list<int>::iterator i;
-                // cout << endl << a << " ====== ";
-                // Get all adjacent vertices of the dequeued
-                // vertex s. If a adjacent has not been visited,
-                // then mark it visited and enqueue it
                 for (i= adj[a].begin(); i != adj[a].end(); ++i)
                 {
-                    // cout << *i << " ";
                     if (!visited[*i])
                     {
                         PLock.lock();
                         visited[*i] = true;
+                        q2.push(*i);
                         PLock.unlock();
-                        queue2[j].push(*i);
-                        // delay(ms);
                     }
-                }
-                completed = true;
-                SQueue.lock();
-                for (int i = 0; i < nw; ++i)
-                {
-                    completed &= !queue1[i].empty();
-                    // cout << endl << "Completed " << completed;
-                    if(!completed) {
-                        // for(int n=0; n<3; n++) {
-                            queue1[j].push(queue1[i].front());
-                            queue1[i].pop();
-                        // }
-                        break;
-                    }
-                }
-                SQueue.unlock();
-
-                if(completed) {
-                    queue<int> qq = queue1[j];
-                    queue1[j] = queue2[j];
-                    queue2[j] = qq;
-                    cout << endl << "Q size " << a << " " << queue1[j].size() << " " << queue2[j].size();
-                    if(!queue1[j].empty()) completed = false;
                 }
             }
-        // }
-        // cout << endl
-        //     << "Found '" << value_to_find << "' " << found_value_count << " times." << endl;
+            completed = true;
+            SQueue.lock();
+            for (int i = 0; i < nw; ++i)
+            {
+                completed &= !queue1[i].empty();
+                if(!completed && queue1[i].size() > 5) {
+                    for(int n=0; n<3; n++) {
+                        q1.push(queue1[i].front());
+                        queue1[i].pop(); 
+                    }
+                    break;
+                }
+            }
+            SQueue.unlock();
+
+            if(completed) {
+                queue<int> qq = q1;
+                q1 = q2;
+                q2 = qq;
+                if(!q1.empty()) completed = false;
+            }
+        }
     }
 }
