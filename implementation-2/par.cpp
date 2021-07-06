@@ -143,7 +143,7 @@ void ProcessGraph(int starting_node, int value_to_find, int num_of_workers)
     }
     cout << "Value to find: " << value_to_find << endl;
 
-    vector<bool> visited(num_of_workers);
+    vector<bool> visited(rows);
     Node<int> source = g.getNode(starting_node);
     vector<queue<Node<int>>> queue1(num_of_workers);
     vector<queue<Node<int>>> queue2(num_of_workers);
