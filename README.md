@@ -1,6 +1,6 @@
 # Directed-Graph-Search-Acyclic
 <br/>
-##both at root and implementation-2 directory
+both at root and implementation-2 directory
 <br/>
 Compile program: g++ seq.cpp -o seq <br/>
 Run Program: ./seq 0 50<br/>
