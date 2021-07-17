@@ -126,6 +126,7 @@ void ProcessGraph(int starting_node, int value_to_find, int num_of_workers)
     for (auto e : edges)
     {
         g.addEdge(e[0], e[1]);
+        g.addEdge(e[1], e[0]);
     }
     int rows = sizeof nodes / sizeof nodes[0];
     // int cols = sizeof nodes[0] / sizeof(int);

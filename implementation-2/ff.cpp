@@ -182,6 +182,7 @@ int main(int argc, char *argv[])
     for (auto e : edges)
     {
         g.addEdge(e[0], e[1]);
+        g.addEdge(e[1], e[0]);
     }
     int rows = sizeof nodes / sizeof nodes[0];
 
