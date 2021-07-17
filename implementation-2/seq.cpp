@@ -39,7 +39,7 @@ void delay(std::chrono::milliseconds m)
 void BFS(int starting_node, int value_to_find)
 {
     int value_to_find_counts = 0;
-    chrono::milliseconds ms = 10ms; // delay
+    chrono::milliseconds ms = 5ms; // delay
 
     Graph<int> g;
     for (auto n : nodes)

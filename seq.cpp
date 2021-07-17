@@ -72,7 +72,7 @@ void Graph::addEdge(int v, int w)
 
 int Graph::BFS(int s, int value_to_find)
 {
-    std::chrono::milliseconds ms = 10ms;
+    std::chrono::milliseconds ms = 5ms;
     int found_value_count = 0;
     // Mark all the vertices as not visited
     bool *visited = new bool[V];

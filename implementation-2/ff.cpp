@@ -17,12 +17,15 @@
 #include "../data.cpp"
 #include "../utimer.cpp"
 
+#define ACTIVEWAIT = "";
+
 using namespace ff;
 using namespace std;
 
 std::mutex q1_mtx;
 std::mutex checkComplete_mtx;
 std::mutex checkProcess_mtx;
+std::mutex queueShift;
 
 int value_to_find_counts;
 int value_to_find;
@@ -67,7 +70,7 @@ void BFS(
     int num_of_workers,
     int id)
 {
-    chrono::milliseconds ms = 10ms; // delay
+    chrono::milliseconds ms = 5ms; // delay
     queue<Node<int>> q1 = queue1[id];
     queue<Node<int>> q2 = queue2[id];
     Node<int> selected_node;
@@ -81,9 +84,9 @@ void BFS(
             q1_mtx.lock();
             selected_node = q1.front();
             q1.pop();
+            q1_mtx.unlock();
             if (selected_node.get_value() == value_to_find)
                 value_to_find_counts_2++;
-            q1_mtx.unlock();
 
             vector<Edge> child = selected_node.getChild();
 
@@ -117,6 +120,7 @@ void BFS(
         }
         q1_mtx.unlock();
 
+        queueShift.lock();
         if (done)
         {
             queue<Node<int>> t = q1;
@@ -125,6 +129,7 @@ void BFS(
             if (!q1.empty())
                 done = false;
         }
+        queueShift.unlock();
     }
 
     checkComplete_mtx.lock();

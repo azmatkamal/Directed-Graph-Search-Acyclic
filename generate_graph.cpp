@@ -64,7 +64,7 @@ void GenRandomGraphs(int NOEdge, int NOVertex)
              << aaa << " >>> ";
         for (i = aa.begin(); i != aa.end(); ++i)
         {
-            MyFile << "{" << aaa << "," << *i << "}," << endl;
+            MyFile << "{" << aaa << "," << ((*i == NOVertex) ? NOVertex - 1 : *i) << "}," << endl;
             cout << *i << " - ";
         }
         cout << endl;
@@ -75,10 +75,13 @@ int main()
 {
    int i, e, n;
    cout<<"Random graph generation: ";
-   n= 99;
+   n= 100;
    cout<<"\nThe graph has "<<n<<" vertices";
    e = rand()%((n*(n-1))/3);
-   cout<<"\nand has "<<e<<" edges.";
+   cout << "\nand has " << e << " edges.";
+   cout << endl;
    GenRandomGraphs(e, n);
+   cout << "\nThe graph has " << n << " vertices";
+   cout << "\nand has " << e << " edges.";
    cout << endl;
 }

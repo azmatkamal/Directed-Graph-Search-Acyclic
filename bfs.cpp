@@ -18,6 +18,7 @@ using namespace std;
 mutex QLock;
 mutex PLock;
 mutex SQueue;
+mutex QueueShift;
 
 namespace bfs
 {
@@ -52,7 +53,7 @@ namespace bfs
         queue<int> q2 = queue2[j];
         bool completed = false;
         int a = 0;
-        std::chrono::milliseconds ms = 10ms;
+        std::chrono::milliseconds ms = 5ms;
 
         while(!completed) {
             while (!q1.empty())
@@ -94,12 +95,14 @@ namespace bfs
             }
             SQueue.unlock();
 
+            QueueShift.lock();
             if(completed) {
                 queue<int> qq = q1;
                 q1 = q2;
                 q2 = qq;
                 if(!q1.empty()) completed = false;
             }
+            QueueShift.unlock();
         }
     }
 }

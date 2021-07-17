@@ -55,7 +55,7 @@ void BFS(
     int id
 )
 {
-    chrono::milliseconds ms = 10ms; // delay
+    chrono::milliseconds ms = 5ms; // delay
     queue<Node<int>> q1 = queue1[id];
     queue<Node<int>> q2 = queue2[id];
     Node<int> selected_node;
@@ -116,7 +116,6 @@ void BFS(
 void ProcessGraph(int starting_node, int value_to_find, int num_of_workers)
 {
     int value_to_find_counts = 0;
-    chrono::milliseconds ms = 10ms; // delay
 
     Graph<int> g;
     vector<thread> threads;
