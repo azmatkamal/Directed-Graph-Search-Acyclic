@@ -48,7 +48,7 @@ void BFS(int starting_node, int value_to_find)
     for (auto e : edges)
     {
         g.addEdge(e[0], e[1]); // A -> B
-        // g.addEdge(e[1], e[0]); // A -> B -> A
+        g.addEdge(e[1], e[0]); // A -> B -> A
     }
     int rows = sizeof nodes / sizeof nodes[0];
     // int cols = sizeof nodes[0] / sizeof(int);
