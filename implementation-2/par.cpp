@@ -6,17 +6,18 @@
 #include <queue>
 #include <mutex>
 #include <thread>
+#include <atomic>
+#include <pthread.h>
 
 #include "node.cpp"
 #include "graph.cpp"
-#include "../data.cpp"
+#include "../graph_data.cpp"
+#include "../graph_values.cpp"
 #include "../utimer.cpp"
 
 std::mutex q1_mtx;
 std::mutex checkComplete_mtx;
 std::mutex checkProcess_mtx;
-
-#define ACTIVEWAIT = "";
 
 using namespace std;
 
@@ -38,15 +39,15 @@ void delay(std::chrono::milliseconds m)
         return;
     };
     active_wait(m);
-#else
-    std::this_thread::sleep_for(m);
+// #else
+//     std::this_thread::sleep_for(m);
 #endif
     return;
 }
 
 void BFS(
     int &value_to_find,
-    int &value_to_find_counts,
+    atomic<int> &value_to_find_counts,
     vector<bool>& visited,
     Graph<int> &g,
     vector<queue<Node<int>>>& queue1,
@@ -60,7 +61,7 @@ void BFS(
     queue<Node<int>> q2 = queue2[id];
     Node<int> selected_node;
     bool done = false;
-    int value_to_find_counts_2 = 0;
+    std::atomic<int> value_to_find_counts_2 = 0;
     while(!done) {
         while(!q1.empty()) {
             delay(ms);
@@ -88,13 +89,16 @@ void BFS(
         done = true;
         q1_mtx.lock();
         for(int i = 0; i < num_of_workers; i++) {
-            done &= !queue1[i].empty();
-            if(!done && queue1[i].size() > 5) {
-               for(int j=0; j < 3; j++) {
-                   q1.push(queue1[i].front());
-                   queue1[i].pop();
-               }
-               break;
+            if(i != id) {
+                done &= !queue1[i].empty();
+                if(!done && queue1[i].size() > 3) {
+                    for(int j=0; j < 2; j++)
+                    {
+                        q1.push(queue1[i].front());
+                        queue1[i].pop();
+                    }
+                    break;
+                }
             }
         }
         q1_mtx.unlock();
@@ -115,7 +119,7 @@ void BFS(
 
 void ProcessGraph(int starting_node, int value_to_find, int num_of_workers)
 {
-    int value_to_find_counts = 0;
+    std::atomic<int> value_to_find_counts = 0;
 
     Graph<int> g;
     vector<thread> threads;
@@ -125,8 +129,8 @@ void ProcessGraph(int starting_node, int value_to_find, int num_of_workers)
     }
     for (auto e : edges)
     {
-        g.addEdge(e[0], e[1]);
-        g.addEdge(e[1], e[0]);
+        g.addEdge(e[0], e[1]); // A -> B
+        // g.addEdge(e[1], e[0]); // A -> B -> A
     }
     int rows = sizeof nodes / sizeof nodes[0];
     // int cols = sizeof nodes[0] / sizeof(int);

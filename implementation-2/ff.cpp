@@ -14,10 +14,9 @@
 
 #include "node.cpp"
 #include "graph.cpp"
-#include "../data.cpp"
+#include "../graph_data.cpp"
+#include "../graph_values.cpp"
 #include "../utimer.cpp"
-
-#define ACTIVEWAIT = "";
 
 using namespace ff;
 using namespace std;
@@ -27,7 +26,7 @@ std::mutex checkComplete_mtx;
 std::mutex checkProcess_mtx;
 std::mutex queueShift;
 
-int value_to_find_counts;
+std::atomic<int> value_to_find_counts = 0;
 int value_to_find;
 int starting_node;
 int num_of_workers;
@@ -54,15 +53,15 @@ void delay(std::chrono::milliseconds m)
         return;
     };
     active_wait(m);
-#else
-    std::this_thread::sleep_for(m);
+// #else
+//     std::this_thread::sleep_for(m);
 #endif
     return;
 }
 
 void BFS(
     int &value_to_find,
-    int &value_to_find_counts,
+    atomic<int> &value_to_find_counts,
     vector<bool> &visited,
     Graph<int> &g,
     vector<queue<Node<int>>> &queue1,
@@ -107,15 +106,18 @@ void BFS(
         q1_mtx.lock();
         for (int i = 0; i < num_of_workers; i++)
         {
-            done &= !queue1[i].empty();
-            if (!done && queue1[i].size() > 5)
+            if (i != id)
             {
-                for (int j = 0; j < 3; j++)
+                done &= !queue1[i].empty();
+                if (!done && queue1[i].size() > 3)
                 {
-                    q1.push(queue1[i].front());
-                    queue1[i].pop();
+                    for (int j = 0; j < 2; j++)
+                    {
+                        q1.push(queue1[i].front());
+                        queue1[i].pop();
+                    }
+                    break;
                 }
-                break;
             }
         }
         q1_mtx.unlock();
@@ -181,8 +183,8 @@ int main(int argc, char *argv[])
     }
     for (auto e : edges)
     {
-        g.addEdge(e[0], e[1]);
-        g.addEdge(e[1], e[0]);
+        g.addEdge(e[0], e[1]); // A -> B
+        // g.addEdge(e[1], e[0]); // A -> B -> A
     }
     int rows = sizeof nodes / sizeof nodes[0];
 

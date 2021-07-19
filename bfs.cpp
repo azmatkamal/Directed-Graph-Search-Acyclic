@@ -11,7 +11,8 @@
 #include <thread>
 #include <ctime>   // For time()
 #include <cstdlib> // For srand() and rand()
-#include "data.cpp"
+#include "graph_values.cpp"
+#include "graph_data.cpp"
 
 using namespace std;
 

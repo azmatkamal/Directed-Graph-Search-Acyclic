@@ -5,10 +5,9 @@
 
 #include "node.cpp"
 #include "graph.cpp"
-#include "../data.cpp"
+#include "../graph_data.cpp"
+#include "../graph_values.cpp"
 #include "../utimer.cpp"
-
-#define ACTIVEWAIT = "";
 
 using namespace std;
 
@@ -30,8 +29,8 @@ void delay(std::chrono::milliseconds m)
         return;
     };
     active_wait(m);
-#else
-    std::this_thread::sleep_for(m);
+// #else
+//     std::this_thread::sleep_for(m);
 #endif
     return;
 }
@@ -48,8 +47,8 @@ void BFS(int starting_node, int value_to_find)
     }
     for (auto e : edges)
     {
-        g.addEdge(e[0], e[1]);
-        g.addEdge(e[1], e[0]);
+        g.addEdge(e[0], e[1]); // A -> B
+        // g.addEdge(e[1], e[0]); // A -> B -> A
     }
     int rows = sizeof nodes / sizeof nodes[0];
     // int cols = sizeof nodes[0] / sizeof(int);

@@ -7,7 +7,8 @@
 #include <thread>
 
 #include "utimer.cpp"
-#include "data.cpp"
+#include "graph_values.cpp"
+#include "graph_data.cpp"
 
 using namespace std;
 
