@@ -1,26 +1,40 @@
 #include <iostream>
-#include <fstream>
+#include <list>
+#include <algorithm>
 #include <string>
-#include <chrono>
-#include <ctime>
 #include <vector>
 #include <queue>
+#include <chrono>
 #include <mutex>
 #include <thread>
-#include <atomic>
-#include <list>
-#include <pthread.h>
+#include <ctime>   // For time()
+#include <cstdlib> // For srand() and rand()
+#include <ff/ff.hpp>
+#include <ff/node.hpp>
 
 #include "node.cpp"
 #include "graph.cpp"
 #include "utimer.cpp"
 #include "barrier.cpp"
 
+using namespace ff;
+using namespace std;
+
 std::mutex q1_mtx;
 std::mutex checkComplete_mtx;
 std::mutex checkProcess_mtx;
 
-using namespace std;
+std::atomic<int> value_to_find_counts = 0;
+int value_to_find;
+int starting_node;
+int num_of_workers;
+int total_nodes;
+int min_edges_per_node;
+int max_edges_per_node;
+Graph<int> g;
+vector<bool> visited;
+vector<queue<Node<int>>> queue1;
+vector<queue<Node<int>>> queue2;
 
 void delay(std::chrono::microseconds m)
 {
@@ -63,22 +77,24 @@ void BFS(
     queue<Node<int>> q2 = queue2[id];
     Node<int> selected_node;
     bool done = false;
-    std::atomic<int> value_to_find_counts_2 = 0;
-    while(!done) {
-        while(!q1.empty()) {
+    int value_to_find_counts_2 = 0;
+    while (!done)
+    {
+        while (!q1.empty())
+        {
             delay(us);
             #ifdef WITHTIME1
             {
                 utimer ut("Time to POP Queue - Mutex");
             #endif
-                q1_mtx.lock();
+               q1_mtx.lock();
                 selected_node = q1.front();
                 q1.pop();
-                if(selected_node.get_value() == value_to_find) value_to_find_counts_2++;
                 q1_mtx.unlock();
+                if (selected_node.get_value() == value_to_find) value_to_find_counts_2++;
             #ifdef WITHTIME1
             }
-            #endif
+            #endif            
 
             vector<Edge> child = selected_node.getChild();
 
@@ -93,8 +109,8 @@ void BFS(
                     {
                         checkProcess_mtx.lock();
                         visited[edge_id] = true;
-                        checkProcess_mtx.unlock();
                         q2.push(g.getNode(edge_id));
+                        checkProcess_mtx.unlock();
                     }
                 }
             #ifdef WITHTIME
@@ -103,15 +119,15 @@ void BFS(
         }
 
         done = true;
-        for(int i = 0; i < num_of_workers; i++) {
+        for (int i = 0; i < num_of_workers; i++)
+        {
             done &= !queue1[i].empty();
-            if(!done && queue1[i].size() > 5) {
-                for(int j=0; j < 3; j++)
+            if (!done && queue1[i].size() > 5)
+            {
+                for (int j = 0; j < 3; j++)
                 {
-                    q1_mtx.lock();
                     q1.push(queue1[i].front());
                     queue1[i].pop();
-                    q1_mtx.unlock();
                 }
                 break;
             }
@@ -134,8 +150,8 @@ void BFS(
         }
         #endif
     }
-    
-    if(done) br_lock.decrease_active_threads();
+
+    if (done) br_lock.decrease_active_threads();
     #ifdef WITHTIME3
     {
         utimer ut("Time to update Counts - Mutex");
@@ -146,16 +162,57 @@ void BFS(
     #ifdef WITHTIME3
     }
     #endif
+   
 }
 
-void ProcessGraph(int starting_node, int value_to_find, int num_of_workers, int total_nodes, int min_edges_per_node, int max_edges_per_node)
+class Worker : public ff_node
 {
-    std::atomic<int> value_to_find_counts = 0;
+    private:
+        int t;
 
-    vector<thread> threads;
-    BarrierWait br_lock(num_of_workers);
+    public:
+        Worker(int tt = -1)
+        {
+            t = tt;
+        }
+        int svc_init()
+        {
+            if (t > -1)
+                set_id(t);
+            return 0;
+        }
+        void set_id(ssize_t id)
+        {
+            ff_node::set_id(id);
+        }
+        int run() { return ff_node::run(); }
+        int wait() { return ff_node::wait(); }
+        void *svc(void *)
+        {
+            BarrierWait br_lock(num_of_workers);
+            BFS(
+                std::ref(value_to_find),
+                std::ref(value_to_find_counts),
+                std::ref(visited),
+                std::ref(g),
+                std::ref(queue1),
+                std::ref(queue2),
+                num_of_workers,
+                get_my_id(),
+                std::ref(br_lock)
+            );
+            return 0;
+        }
+};
 
-    Graph<int> g;
+int main(int argc, char *argv[])
+{
+    starting_node = atoi(argv[1]);
+    value_to_find = atoi(argv[2]);
+    num_of_workers = atoi(argv[3]);
+    total_nodes = atoi(argv[4]);
+    min_edges_per_node = atoi(argv[5]);
+    max_edges_per_node = atoi(argv[6]);
     {
         utimer ut("Graph processing");
         auto filename = "graph_data/graph_data_" + to_string(total_nodes) + "_" + to_string(min_edges_per_node) + "_" + to_string(max_edges_per_node) + ".txt";
@@ -177,6 +234,7 @@ void ProcessGraph(int starting_node, int value_to_find, int num_of_workers, int 
             g.addEdge(dest, src);
         }
     }
+    // int cols = sizeof nodes[0] / sizeof(int);
 
     bool found = false;
     for (int x = 0; x < total_nodes; ++x)
@@ -186,27 +244,26 @@ void ProcessGraph(int starting_node, int value_to_find, int num_of_workers, int 
     if (!found)
     {
         std::cout << "Starting node " << starting_node << " is not one of the graph edge\n";
-        return;
+        return 0;
     }
     cout << "Starting from: " << starting_node << endl;
     cout << "Value to find: " << value_to_find << endl;
     cout << "No. of Workers: " << num_of_workers << endl;
 
-    vector<bool> visited(total_nodes);
     Node<int> source = g.getNode(starting_node);
-    vector<queue<Node<int>>> queue1(num_of_workers);
-    vector<queue<Node<int>>> queue2(num_of_workers);
+    visited.resize(total_nodes);
+    queue1.resize(num_of_workers);
+    queue2.resize(num_of_workers);
 
     visited[source.get_node_id()] = true;
     if (source.get_value() == value_to_find)
-    {
         value_to_find_counts++;
-    }
 
+    vector<Edge> init_edges = source.getChild();
     {
         utimer ut("Assigning nodes");
-        vector<Edge> init_edges = source.getChild();
-        for(int i = 0; i < init_edges.size(); i++) {
+        for (int i = 0; i < init_edges.size(); i++)
+        {
             int edge_id = init_edges[i].get_edge_id();
             if (!visited[edge_id])
             {
@@ -216,40 +273,27 @@ void ProcessGraph(int starting_node, int value_to_find, int num_of_workers, int 
         }
     }
     {
-        utimer ut("PAR Part");
-        for(int i=0; i < num_of_workers; i++) {
-            threads.emplace_back(
-                BFS,
-                std::ref(value_to_find),
-                std::ref(value_to_find_counts),
-                std::ref(visited),
-                std::ref(g),
-                std::ref(queue1),
-                std::ref(queue2),
-                num_of_workers,
-                i,
-                std::ref(br_lock)
-            );
+        utimer ut("FF Part");
+        ff_farm farm;
+        vector<ff_node *> w;
+        for (int i = 0; i < num_of_workers; i++)
+        {
+            w.push_back(new Worker(i));
         }
-        for(auto& thread: threads) {
-            thread.join();
+        farm.add_workers(w);
+        if (farm.run_then_freeze() < 0)
+        {
+            cout << "Error";
+            return 0;
         }
+        else
+        {
+            farm.wait_freezing();
+        }
+
     }
 
     cout << value_to_find << " is found " << value_to_find_counts
-         << " time" << (value_to_find_counts < 2 ? "" : "s") << endl;
-}
-
-int main(int argc, char *argv[])
-{
-    int starting_node = atoi(argv[1]);
-    int value_to_find = atoi(argv[2]);
-    int num_of_workers = atoi(argv[3]);
-    int total_nodes = atoi(argv[4]);
-    int min_edges_per_node = atoi(argv[5]);
-    int max_edges_per_node = atoi(argv[6]);
-  
-    ProcessGraph(starting_node, value_to_find, num_of_workers, total_nodes, min_edges_per_node, max_edges_per_node);
-
+        << " time" << (value_to_find_counts < 2 ? "" : "s") << endl;
     return 0;
 }

@@ -1,156 +1,144 @@
-#include<iostream>
-#include <list>
-#include <algorithm>
+#include <iostream>
+#include <fstream>
 #include <string>
 #include <chrono>
 #include <ctime>
-#include <thread>
 
+#include "node.cpp"
+#include "graph.cpp"
 #include "utimer.cpp"
-#include "graph_values.cpp"
-#include "graph_data.cpp"
 
 using namespace std;
 
-void delay(std::chrono::milliseconds m)
+void delay(std::chrono::microseconds m)
 {
-#ifdef ACTIVEWAIT
-    auto active_wait = [](std::chrono::milliseconds ms)
-    {
-        long msecs = ms.count();
-        auto start = std::chrono::high_resolution_clock::now();
-        auto end = false;
-        while (!end)
+    #ifdef ACTIVEWAIT
+        auto active_wait = [](std::chrono::microseconds us)
         {
-            auto elapsed = std::chrono::high_resolution_clock::now() - start;
-            auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-            if (msec > msecs)
-                end = true;
-        }
-        return;
-    };
-    active_wait(m);
-#else
-    std::this_thread::sleep_for(m);
-#endif
-    return;
-}
-
-class Graph
-{
-    int V;    // No. of vertices
- 
-    // Pointer to an array containing adjacency
-    // lists
-    list<int> *adj;
-
-public:
-    list<int> all_elements;
-    Graph(int V);  // Constructor
-
-    // list<int> getEdges();
-
-    // function to add an edge to graph
-    void addEdge(int v, int w);
-
-    // prints BFS traversal from a given source s
-    int BFS(int s, int value_to_find);
-};
-
-Graph::Graph(int V)
-{
-    this->V = V;
-    adj = new list<int>[V];
-}
- 
-void Graph::addEdge(int v, int w)
-{
-    adj[v].push_back(w); // Add w to v’s list.
-    adj[w].push_back(v); // Add v to w’s list.
-    all_elements.push_back(v);
-    all_elements.push_back(w);
-}
-
-int Graph::BFS(int s, int value_to_find)
-{
-    std::chrono::milliseconds ms = 5ms;
-    int found_value_count = 0;
-    // Mark all the vertices as not visited
-    bool *visited = new bool[V];
-    for(int i = 0; i < V; i++)
-        visited[i] = false;
- 
-    // Create a queue for BFS
-    list<int> queue;
- 
-    // Mark the current node as visited and enqueue it
-    visited[s] = true;
-    queue.push_back(s);
- 
-    // 'i' will be used to get all adjacent
-    // vertices of a vertex
-    list<int>::iterator i;
- 
-    while(!queue.empty())
-    {
-        delay(ms);
-        // Dequeue a vertex from queue and print it
-        s = queue.front();
-        queue.pop_front();
- 
-        // Get all adjacent vertices of the dequeued
-        // vertex s. If a adjacent has not been visited,
-        // then mark it visited and enqueue it
-        for (i = adj[s].begin(); i != adj[s].end(); ++i)
-        {
-            if (!visited[*i])
+            long usecs = us.count();
+            auto start = std::chrono::high_resolution_clock::now();
+            auto end = false;
+            while (!end)
             {
-                visited[*i] = true;
-                queue.push_back(*i);
-                if(values2[*i] == value_to_find)
-                {
-                    found_value_count++;
-                }
+                auto elapsed = std::chrono::high_resolution_clock::now() - start;
+                auto usec = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+                if (usec > usecs)
+                    end = true;
             }
+            return;
+        };
+        active_wait(m);
+    // #else
+    //     std::this_thread::sleep_for(m);
+    #endif
+        return;
+}
+
+void BFS(int starting_node, int value_to_find, int total_nodes, int min_edges_per_node, int max_edges_per_node)
+{
+    int value_to_find_counts = 0;
+    chrono::microseconds us = 500us; // delay
+
+    Graph<int> g;
+    {
+        utimer ut("Graph processing");
+        auto filename = "graph_data/graph_data_" + to_string(total_nodes) + "_" + to_string(min_edges_per_node) + "_" + to_string(max_edges_per_node) + ".txt";
+        ifstream file(filename);
+        int nodeCount;
+        file >> nodeCount;
+        
+        for (int i = 0; i < nodeCount; ++i) {
+            int nodeID, val;
+            file >> nodeID >> val;
+            g.addNode(nodeID, val);
+        }
+        while( file.peek() != EOF ) {
+            int src, dest;
+            file >> src >> dest;
+            g.addEdge(src, dest);
+            g.addEdge(dest, src);
         }
     }
-    return found_value_count;
-}
-
-// Driver program to test methods of graph class
-int main(int argc, char *argv[])
-{
-
     {
-        utimer ut("SEQ TIME");
-        // auto start = std::chrono::high_resolution_clock::now();
-        // Create a graph given in the above diagram
-
-        int rows = sizeof nodes / sizeof nodes[0];
-        Graph gs((rows+1));
-        // Graph gs(1047);
-        for (auto n : edges)
-        {
-            gs.addEdge(n[0], n[1]);
-        }
-
-        int starting_vertex = atoi(argv[1]);
-        bool found = (std::find(gs.all_elements.begin(), gs.all_elements.end(), starting_vertex) != gs.all_elements.end());
+        utimer ut("SEQ Part");
+        bool found = false;
+        for (int x = 0; x < total_nodes; ++x)
+            if (x == starting_node)
+                found = true;
 
         if (!found)
         {
-            std::cout << "Starting vertex " << starting_vertex << " is not one of the graph edge\n";
-            return 0;
+            std::cout << "Starting node " << starting_node << " is not one of the graph edge\n";
+            return;
         }
-        int value_to_find = atoi(argv[2]);
+        cout << "Starting from: " << starting_node << endl;
         cout << "Value to find: " << value_to_find << endl;
 
-        int found_value_count = gs.BFS(starting_vertex, value_to_find);
-        cout << endl << "Found '" << value_to_find << "' " << found_value_count << " times." << endl;
+        vector<bool> visited(total_nodes, false);
+        queue<Node<int>> q;
+        Node<int> current;
+        q.push(g.getNode(starting_node));
+        visited[starting_node] = true;
 
-        // auto elapsed = std::chrono::high_resolution_clock::now() - start;
-        // auto usec = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-        // cout << endl << "Spent " << usec << " usecs" << endl;
+        while (!q.empty())
+        {
+            #ifdef WITHTIME
+            {
+                utimer ut("Time for a single loop");
+            #endif
+
+                delay(us);
+                current = q.front();
+                q.pop();
+
+                #ifdef WITHTIME
+                {
+                    utimer ut("Time to update counts");
+                #endif
+                    if (current.get_value() == value_to_find)
+                    {
+                        value_to_find_counts++;
+                    }
+                #ifdef WITHTIME
+                }
+                #endif
+
+                vector<Edge> child = current.getChild();
+                #ifdef WITHTIME
+                {
+                    utimer ut("Time for Edges");
+                #endif
+                    for (int i = 0; i < child.size(); i++)
+                    {
+                        int edge_id = child[i].get_edge_id();
+                        if (!visited[edge_id])
+                        {
+                            q.push(g.getNode(edge_id));
+                            visited[edge_id] = true;
+                        }
+                    }
+                #ifdef WITHTIME
+                }
+                #endif
+            #ifdef WITHTIME
+            }
+            #endif
+        }
+
     }
+    cout << value_to_find << " is found " << value_to_find_counts
+        << " time" << (value_to_find_counts < 2 ? "" : "s")  << endl;
+}
+
+int main(int argc, char *argv[])
+{
+    int starting_node = atoi(argv[1]);
+    int value_to_find = atoi(argv[2]);
+    int total_nodes = atoi(argv[3]);
+    int min_edges_per_node = atoi(argv[4]);
+    int max_edges_per_node = atoi(argv[5]);
+
+    BFS(starting_node, value_to_find, total_nodes, min_edges_per_node, max_edges_per_node);
+
     return 0;
 }
